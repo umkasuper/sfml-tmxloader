@@ -71,13 +71,16 @@ void TileQuad::setDirty()
 ///------LayerSet-----///
 
 //public
-LayerSet::LayerSet(const sf::Texture& texture, sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize)
-	: m_texture	(texture),
+LayerSet::LayerSet(const sf::Texture& texture, sf::Uint8 patchSize, const sf::Vector2u& mapSize,
+                   const sf::Vector2u tileSize, std::vector<TileFrame> tileFrame)
+    : m_texture	(texture),
 	m_patchSize	(patchSize),
 	m_mapSize	(mapSize),
 	m_tileSize	(tileSize),
 	m_patchCount(static_cast<sf::Uint32>(std::ceil(static_cast<float>(mapSize.x) / patchSize)), static_cast<sf::Uint32>(std::ceil(static_cast<float>(mapSize.y) / patchSize))),
-	m_visible	(true)
+	m_visible	(true),
+    m_tileFrame (tileFrame)
+
 {
 	m_patches.resize(m_patchCount.x * m_patchCount.y);
 }
@@ -171,7 +174,7 @@ void LayerSet::draw(sf::RenderTarget& rt, sf::RenderStates states) const
 			auto index = y * m_patchCount.x + x;
 			if(index < m_patches.size() && !m_patches[index].empty())
 			{
-				states.texture = &m_texture;
+                states.texture = &m_texture;
 				rt.draw(m_patches[index].data(), static_cast<unsigned>(m_patches[index].size()), sf::Quads, states);
 			}
 		}

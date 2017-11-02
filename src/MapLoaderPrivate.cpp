@@ -254,7 +254,7 @@ bool MapLoader::parseTileSets(const pugi::xml_node& mapNode)
 
 bool MapLoader::processTiles(const pugi::xml_node& tilesetNode)
 {
-	sf::Uint16 tileWidth, tileHeight, spacing, margin;
+	sf::Uint16 tileWidth, tileHeight, spacing, margin, tileID;
 
 	//try and parse tile sizes
 	if(!(tileWidth = tilesetNode.attribute("tilewidth").as_int()) ||
@@ -266,6 +266,8 @@ bool MapLoader::processTiles(const pugi::xml_node& tilesetNode)
 	}
 	spacing = (tilesetNode.attribute("spacing")) ? tilesetNode.attribute("spacing").as_int() : 0u;
 	margin = (tilesetNode.attribute("margin")) ? tilesetNode.attribute("margin").as_int() : 0u;
+    tileID = (tilesetNode.attribute("id")) ? tilesetNode.attribute("id").as_int() : 0u;
+
 
 	//try parsing image node
 	pugi::xml_node imageNode;
@@ -324,9 +326,9 @@ bool MapLoader::processTiles(const pugi::xml_node& tilesetNode)
 			rect.width = tileWidth;
 
 			//store texture coords and tileset index for vertex array
-			m_tileInfo.push_back(TileInfo(rect,
+			m_tileInfo.emplace_back(new TileInfo(rect,
 				sf::Vector2f(static_cast<float>(rect.width), static_cast<float>(rect.height)),
-				m_tilesetTextures.size() - 1u));
+				m_tilesetTextures.size() - 1u, tileID));
 		}
 	}
 
@@ -340,6 +342,12 @@ bool MapLoader::parseCollectionOfImages(const pugi::xml_node& tilesetNode)
     {
         while (tile)
         {
+            sf::Uint32 tileId = tile.attribute("id").as_int();
+
+            std::vector<LayerSet::TileFrame> m_tileFrame;
+            sf::IntRect rect;
+
+
             for (const auto& c : tile.children()) //ok so I only just found pugi supports this
             {
                 if (std::string(c.name()) == "image")
@@ -365,15 +373,14 @@ bool MapLoader::parseCollectionOfImages(const pugi::xml_node& tilesetNode)
                     sf::Uint16 width = c.attribute("width").as_uint();
                     sf::Uint16 height = c.attribute("height").as_uint();
 
-                    sf::IntRect rect;
                     rect.height = height;
                     rect.width = width;
 
-                    //store texture coords and tileset index for vertex array
-                    //TODO this assumes tile IDs are contiguous - they aren't always!
-                    m_tileInfo.push_back(TileInfo(rect,
-                        sf::Vector2f(static_cast<float>(rect.width), static_cast<float>(rect.height)),
-                        m_tilesetTextures.size() - 1u));
+//                    //store texture coords and tileset index for vertex array
+//                    //TODO this assumes tile IDs are contiguous - they aren't always!
+//                    m_tileInfo.push_back(TileInfo(rect,
+//                        sf::Vector2f(static_cast<float>(rect.width), static_cast<float>(rect.height)),
+//                        m_tilesetTextures.size() - 1u, tileId));
 
                     LOG("Processed " + imageName, Logger::Type::Info);
                 }
@@ -381,7 +388,34 @@ bool MapLoader::parseCollectionOfImages(const pugi::xml_node& tilesetNode)
                 {
                     //need to implement this when implementing with single tilesets above
                 }
+                else if (std::string(c.name()) == "animation")
+                {
+                    // animation
+                    pugi::xml_node animationNode = c;
+                    pugi::xml_node frameNode = animationNode.child("frame");
+                    while(frameNode)
+                    {
+                        sf::Uint16 tileid = frameNode.attribute("tileid").as_int();
+                        sf::Uint16  duration = frameNode.attribute("duration").as_int();
+                        //object.setProperty(name, value);
+                        m_tileFrame.push_back(LayerSet::TileFrame(duration, tileid));
+                        LOG("Set object property " + name + " with value " + value, Logger::Type::Info);
+                        frameNode = frameNode.next_sibling("frame");
+                    }
+                }
             }
+
+            //store texture coords and tileset index for vertex array
+            //TODO this assumes tile IDs are contiguous - they aren't always!
+            if (m_tileFrame.empty())
+                m_tileInfo.emplace_back(new TileInfo(rect,
+                                          sf::Vector2f(static_cast<float>(rect.width), static_cast<float>(rect.height)),
+                                          m_tilesetTextures.size() - 1u, tileId));
+            else
+                m_tileInfo.emplace_back(new TileInfoAnimate(rect,
+                                              sf::Vector2f(static_cast<float>(rect.width), static_cast<float>(rect.height)),
+                                              m_tilesetTextures.size() - 1u, tileId, m_tileFrame));
+
             tile = tile.next_sibling();
         }
     }
@@ -679,21 +713,22 @@ TileQuad* MapLoader::addTileToLayer(MapLayer& layer, sf::Uint16 x, sf::Uint16 y,
     sf::Vertex v0, v1, v2, v3;
 
 	//applying half pixel trick avoids artifacting when scrolling
-	v0.texCoords = m_tileInfo[gid].Coords[0] + sf::Vector2f(0.5f, 0.5f);
-	v1.texCoords = m_tileInfo[gid].Coords[1] + sf::Vector2f(-0.5f, 0.5f);
-	v2.texCoords = m_tileInfo[gid].Coords[2] + sf::Vector2f(-0.5f, -0.5f);
-	v3.texCoords = m_tileInfo[gid].Coords[3] + sf::Vector2f(0.5f, -0.5f);
+    TileInfo tileInfo = *m_tileInfo[gid];
+	v0.texCoords = tileInfo.Coords[0] + sf::Vector2f(0.5f, 0.5f);
+	v1.texCoords = tileInfo.Coords[1] + sf::Vector2f(-0.5f, 0.5f);
+	v2.texCoords = tileInfo.Coords[2] + sf::Vector2f(-0.5f, -0.5f);
+	v3.texCoords = tileInfo.Coords[3] + sf::Vector2f(0.5f, -0.5f);
 
     //flip texture coordinates according to bits set
     doFlips(idAndFlags.second,&v0.texCoords,&v1.texCoords,&v2.texCoords,&v3.texCoords);
 
 	v0.position = sf::Vector2f(static_cast<float>(m_tileWidth * x), static_cast<float>(m_tileHeight * y));
-	v1.position = sf::Vector2f(static_cast<float>(m_tileWidth * x) + m_tileInfo[gid].Size.x, static_cast<float>(m_tileHeight * y));
-	v2.position = sf::Vector2f(static_cast<float>(m_tileWidth * x) + m_tileInfo[gid].Size.x, static_cast<float>(m_tileHeight * y) + m_tileInfo[gid].Size.y);
-	v3.position = sf::Vector2f(static_cast<float>(m_tileWidth * x), static_cast<float>(m_tileHeight * y) + m_tileInfo[gid].Size.y);
+	v1.position = sf::Vector2f(static_cast<float>(m_tileWidth * x) + tileInfo.Size.x, static_cast<float>(m_tileHeight * y));
+	v2.position = sf::Vector2f(static_cast<float>(m_tileWidth * x) + tileInfo.Size.x, static_cast<float>(m_tileHeight * y) + tileInfo.Size.y);
+	v3.position = sf::Vector2f(static_cast<float>(m_tileWidth * x), static_cast<float>(m_tileHeight * y) + tileInfo.Size.y);
 
 	//offset tiles with size not equal to map grid size
-	sf::Uint16 tileHeight = static_cast<sf::Uint16>(m_tileInfo[gid].Size.y);
+	sf::Uint16 tileHeight = static_cast<sf::Uint16>(tileInfo.Size.y);
 	if(tileHeight != m_tileHeight)
 	{
 		float diff = static_cast<float>(m_tileHeight - tileHeight);
@@ -728,11 +763,28 @@ TileQuad* MapLoader::addTileToLayer(MapLayer& layer, sf::Uint16 x, sf::Uint16 y,
 	v2.position += offset;
 	v3.position += offset;
 
-	sf::Uint16 id = m_tileInfo[gid].TileSetId;
+	sf::Uint16 id = tileInfo.TileSetId;
 	if(layer.layerSets.find(id) == layer.layerSets.end())
 	{
-		//create a new layerset for texture
-		layer.layerSets.insert(std::make_pair(id, std::make_shared<LayerSet>(*m_tilesetTextures[id], m_patchSize, sf::Vector2u(m_width, m_height), sf::Vector2u(m_tileWidth, m_tileHeight))));
+        std::vector<LayerSet::TileFrame> tileFrames;
+
+        //create a new layerset for texture
+        if (tileInfo.m_type == TileType::AnimationTile) {
+            TileInfoAnimate *animateTileInfo = static_cast<TileInfoAnimate*>(m_tileInfo[gid].get());
+            tileFrames = animateTileInfo->m_tileFrames;
+        }
+
+        layer.layerSets.insert(std::make_pair(id, std::make_shared<LayerSet>(*m_tilesetTextures[id], m_patchSize, sf::Vector2u(m_width, m_height), sf::Vector2u(m_tileWidth, m_tileHeight), tileFrames)));
+//        if (tileInfo.m_type == TileType::Tile)
+//		    layer.layerSets.insert(std::make_pair(id, std::make_shared<LayerSet>(*m_tilesetTextures[id], m_patchSize, sf::Vector2u(m_width, m_height), sf::Vector2u(m_tileWidth, m_tileHeight))));
+//        if (tileInfo.m_type == TileType::AnimationTile) {
+//            TileInfoAnimate *animateTileInfo = static_cast<TileInfoAnimate*>(m_tileInfo[gid].get());
+//            sf::Uint16 m_id = id;
+//            if (!animateTileInfo->m_tileFrames.empty())
+//                m_id = animateTileInfo->m_tileFrames.at(0).m_tileId;
+//            layer.layerSets.insert(std::make_pair(id, std::make_shared<LayerSet>(*m_tilesetTextures[m_id], m_patchSize, sf::Vector2u(m_width, m_height), sf::Vector2u(m_tileWidth, m_tileHeight))));
+//        }
+
 	}
 
 	//add tile to set
@@ -880,9 +932,10 @@ bool MapLoader::parseObjectgroup(const pugi::xml_node& groupNode)
 		if(objectNode.attribute("type")) object.setType(objectNode.attribute("type").as_string());
         if(objectNode.attribute("rotation")) object.setRotation(objectNode.attribute("rotation").as_float());
 		if(objectNode.attribute("visible")) object.setVisible(objectNode.attribute("visible").as_bool());
+
 		if(objectNode.attribute("gid"))
 		{		
-			sf::Uint32 gid = objectNode.attribute("gid").as_int();
+			sf::Uint32 gid = objectNode.attribute("gid").as_int() - 1; // редактор вешает + 1
 
 			LOG("Found object with tile GID " + gid, Logger::Type::Info);
 
@@ -894,7 +947,7 @@ bool MapLoader::parseObjectgroup(const pugi::xml_node& groupNode)
 			object.setQuad(addTileToLayer(layer, x, y, gid, offset));
 			object.setShapeType(Tile);
 
-			TileInfo info = m_tileInfo[gid];
+			TileInfo info = *m_tileInfo[gid];
 			//create bounding poly
 			float width = static_cast<float>(info.Size.x);
 			float height = static_cast<float>(info.Size.y);
@@ -905,6 +958,7 @@ bool MapLoader::parseObjectgroup(const pugi::xml_node& groupNode)
 			object.addPoint(sf::Vector2f(0.f, height));
 			object.setSize(sf::Vector2f(width, height));
 		}
+
 		object.setParent(layer.name);
 
 		//call objects create debug shape function with colour / opacity

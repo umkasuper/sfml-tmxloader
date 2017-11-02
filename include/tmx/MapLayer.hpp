@@ -61,13 +61,23 @@ namespace tmx
 	class TMX_EXPORT_API LayerSet final : public sf::Drawable
 	{
 		friend class TileQuad;
-	public:	
+	public:
 
-		LayerSet(const sf::Texture& texture, sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize);
+        // структура для описания фрейма
+        struct TileFrame {
+            sf::Uint16 m_Duration; // Длительность показа
+            sf::Uint16 m_tileId;   // ID tile который показывать
+            TileFrame(sf::Uint16 duration, sf::Uint16 tileID) {m_Duration = duration; m_tileId = tileID;}
+        };
+
+		LayerSet(const sf::Texture& texture, sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize, std::vector<TileFrame> tileFrame);
 		TileQuad* addTile(sf::Vertex vt0, sf::Vertex vt1, sf::Vertex vt2, sf::Vertex vt3, sf::Uint16 x, sf::Uint16 y);
 		void cull(const sf::FloatRect& bounds);
 
+
+
 	private:
+        const std::vector<TileFrame> m_tileFrame;
 		const sf::Texture& m_texture;
 		const sf::Uint8 m_patchSize;
 		const sf::Vector2u m_mapSize;

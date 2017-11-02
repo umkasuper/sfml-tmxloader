@@ -146,15 +146,33 @@ namespace tmx
 		std::vector<std::unique_ptr<sf::Texture>> m_imageLayerTextures;
 		std::vector<std::unique_ptr<sf::Texture>> m_tilesetTextures; //textures created from complete sets used when drawing vertex arrays
 		const sf::Uint8 m_patchSize;
-		struct TileInfo final //holds texture coords and tileset id of a tile
-		{
-			std::array<sf::Vector2f, 4> Coords;
-			sf::Vector2f Size;
-			sf::Uint16 TileSetId;
-			TileInfo();
-			TileInfo(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId);
-		};
-		std::vector<TileInfo> m_tileInfo; //stores information on all the tilesets for creating vertex arrays
+
+        enum class TileType
+        {
+            Tile,
+            AnimationTile
+        };
+
+        struct TileInfo
+        {
+            TileType m_type;
+            std::array<sf::Vector2f, 4> Coords;
+            sf::Vector2f Size;
+            sf::Uint16 TileSetId;
+            sf::Uint16 m_tileId;
+            TileInfo();
+            TileInfo(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId, sf::Uint16 teleId);
+        };
+
+        struct TileInfoAnimate : public TileInfo
+        {
+            std::vector<LayerSet::TileFrame> m_tileFrames;
+            TileInfoAnimate();
+            TileInfoAnimate(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId,
+                            sf::Uint16 teleId, const std::vector<LayerSet::TileFrame> &tileFrames);
+        };
+
+		std::vector<std::unique_ptr<TileInfo>> m_tileInfo; //stores information on all the tilesets for creating vertex arrays
 
 		sf::VertexArray m_gridVertices; //used to draw map grid in debug
 		bool m_mapLoaded, m_quadTreeAvailable;
