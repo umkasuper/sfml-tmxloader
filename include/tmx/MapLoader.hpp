@@ -131,7 +131,6 @@ namespace tmx
         bool quadTreeAvailable() const;
 
     private:
-<<<<<<< HEAD
         //properties which correspond to tmx
         sf::Uint16 m_width, m_height; //tile count
         sf::Uint16 m_tileWidth, m_tileHeight; //width / height of tiles
@@ -166,67 +165,6 @@ namespace tmx
         bool parseMapNode(const pugi::xml_node& mapNode);
         bool parseTileSets(const pugi::xml_node& mapNode);
         bool processTiles(const pugi::xml_node& tilesetNode);
-=======
-		//properties which correspond to tmx
-		sf::Uint16 m_width, m_height; //tile count
-		sf::Uint16 m_tileWidth, m_tileHeight; //width / height of tiles
-		MapOrientation m_orientation;
-		float m_tileRatio; //width / height ratio of isometric tiles
-		std::map<std::string, std::string> m_properties;
-
-		mutable sf::FloatRect m_bounds; //bounding area of tiles visible on screen
-		mutable sf::Vector2f m_lastViewPos; //save recalc bounds if view not moved
-		std::vector<std::string> m_searchPaths; //additional paths to search for tileset files
-
-		mutable std::vector<MapLayer> m_layers; //layers of map, including image and object layers
-		std::vector<std::unique_ptr<sf::Texture>> m_imageLayerTextures;
-		std::vector<std::unique_ptr<sf::Texture>> m_tilesetTextures; //textures created from complete sets used when drawing vertex arrays
-		const sf::Uint8 m_patchSize;
-
-        enum class TileType
-        {
-            Tile,
-            AnimationTile
-        };
-
-        struct TileInfo
-        {
-            TileType m_type;
-            std::array<sf::Vector2f, 4> Coords;
-            sf::Vector2f Size;
-            sf::Uint16 TileSetId;
-            sf::Uint16 m_tileId;
-            TileInfo();
-            TileInfo(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId, sf::Uint16 teleId);
-        };
-
-        struct TileInfoAnimate : public TileInfo
-        {
-            std::vector<LayerSet::TileFrame> m_tileFrames;
-            TileInfoAnimate();
-            TileInfoAnimate(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId,
-                            sf::Uint16 teleId, const std::vector<LayerSet::TileFrame> &tileFrames);
-        };
-
-		std::vector<std::unique_ptr<TileInfo>> m_tileInfo; //stores information on all the tilesets for creating vertex arrays
-
-		sf::VertexArray m_gridVertices; //used to draw map grid in debug
-		bool m_mapLoaded, m_quadTreeAvailable;
-		//root node for quad tree partition
-		QuadTreeRoot m_rootNode;
-
-
-		bool loadFromXmlDoc(const pugi::xml_document& doc);
-		//resets any loaded map properties
-		void unload();
-		//sets the visible area of tiles to be drawn
-		void setDrawingBounds(const sf::View& view);
-
-		//utility functions for parsing map data
-		bool parseMapNode(const pugi::xml_node& mapNode);
-		bool parseTileSets(const pugi::xml_node& mapNode);
-		bool processTiles(const pugi::xml_node& tilesetNode);
->>>>>>> e401ced178438fa1a4fef81e9882fbdaee84efa7
         bool parseCollectionOfImages(const pugi::xml_node& tilesetNode);
         bool parseLayer(const pugi::xml_node& layerNode);
         TileQuad* addTileToLayer(MapLayer& layer, sf::Uint16 x, sf::Uint16 y, sf::Uint32 gid, const sf::Vector2f& offset = sf::Vector2f());
