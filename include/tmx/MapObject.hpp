@@ -64,7 +64,8 @@ namespace tmx
 		Circle,
 		Polygon,
 		Polyline,
-		Tile
+		Tile,
+		Animation
 	};
 
 	/*!

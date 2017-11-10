@@ -219,18 +219,3 @@ bool MapLoader::quadTreeAvailable() const
 
 
 
-MapLoader::TileInfo::TileInfo()
-	: TileSetId (0u)
-{
-
-}
-
-MapLoader::TileInfo::TileInfo(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId)
-	: Size		(size),
-	TileSetId	(tilesetId)
-{
-	Coords[0] = sf::Vector2f(static_cast<float>(rect.left), static_cast<float>(rect.top));
-	Coords[1] = sf::Vector2f(static_cast<float>(rect.left + rect.width), static_cast<float>(rect.top));
-	Coords[2] = sf::Vector2f(static_cast<float>(rect.left + rect.width), static_cast<float>(rect.top + rect.height));
-	Coords[3] = sf::Vector2f(static_cast<float>(rect.left), static_cast<float>(rect.top + rect.height));
-}

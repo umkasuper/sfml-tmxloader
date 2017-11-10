@@ -37,7 +37,7 @@ it freely, subject to the following restrictions:
 
 namespace tmx
 {
-	class LayerSet;
+    class LayerSet;
 	class TMX_EXPORT_API TileQuad final
 	{
 		friend class LayerSet;
@@ -61,15 +61,57 @@ namespace tmx
 	class TMX_EXPORT_API LayerSet final : public sf::Drawable
 	{
 		friend class TileQuad;
-	public:	
+	public:
 
-		LayerSet(const sf::Texture& texture, sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize);
+        // структура для описания фрейма
+        class TileFrameDescription {
+        private:
+            const sf::Uint16 m_Duration; // Длительность показа
+            const sf::Uint16 m_tileId;   // ID tile который показывать
+        public:
+            TileFrameDescription(const sf::Uint16 duration, const sf::Uint16 tileID) :
+                    m_Duration(duration),
+                    m_tileId(tileID) {}
+        };
+
+        class TileFrame {
+        private:
+            const TileFrameDescription m_frameDescription;
+        public:
+            const sf::Texture& m_texture;
+            const sf::Texture &getTexture() {return m_texture;}
+            TileFrame(const TileFrameDescription &frameDescription, const sf::Texture& texture) :
+                m_frameDescription(frameDescription),
+                m_texture(texture) {}
+        };
+
+        enum class TileType
+        {
+            Tile,
+            AnimationTile
+        };
+
+        struct TileInfo
+        {
+            TileType m_type;
+            std::array<sf::Vector2f, 4> Coords;
+            std::vector<TileFrameDescription> m_tileFrames;
+            sf::Vector2f Size;
+            sf::Uint16 TileSetId; // индекс в массиве m_tilesetTextures
+            sf::Uint16 m_tileId; // ID в xml
+            TileInfo();
+            TileInfo(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId, sf::Uint16 teleId, const std::vector<TileFrameDescription> &tileFrames);
+        };
+
+		LayerSet(sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize, std::vector<TileFrame> &tileFrame, LayerSet::TileInfo &tileInfo);
 		TileQuad* addTile(sf::Vertex vt0, sf::Vertex vt1, sf::Vertex vt2, sf::Vertex vt3, sf::Uint16 x, sf::Uint16 y);
 		void cull(const sf::FloatRect& bounds);
 
+
 	private:
-		const sf::Texture& m_texture;
-		const sf::Uint8 m_patchSize;
+        const std::vector<TileFrame> m_tileFrame; // массив кадров
+		const TileInfo& m_tileInfo; // ссылка на TileInfo
+        const sf::Uint8 m_patchSize;
 		const sf::Vector2u m_mapSize;
 		const sf::Vector2u m_patchCount;
 		const sf::Vector2u m_tileSize;
@@ -84,7 +126,9 @@ namespace tmx
 
 		mutable sf::FloatRect m_boundingBox;
 		void updateAABB(sf::Vector2f position, sf::Vector2f size);
-		bool m_visible;
+		bool m_visible;    // виден или нет объект
+
+        int m_frameNumber; // Номер кадра из m_tileFrame, для отрисовки анимации
 	};
 
 
