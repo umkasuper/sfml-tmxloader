@@ -71,6 +71,7 @@ void TileQuad::setDirty()
 ///------LayerSet-----///
 
 //public
+<<<<<<< HEAD
 LayerSet::LayerSet(sf::Uint8 patchSize, const sf::Vector2u& mapSize,
                    const sf::Vector2u tileSize, std::vector<LayerSet::TileFrame> &tileFrame, LayerSet::TileInfo &tileInfo)
     : /*m_texture	(texture),*/
@@ -82,6 +83,17 @@ LayerSet::LayerSet(sf::Uint8 patchSize, const sf::Vector2u& mapSize,
     m_tileFrame (tileFrame),
     m_tileInfo  (tileInfo),
     m_frameNumber(0)
+=======
+LayerSet::LayerSet(const sf::Texture& texture, sf::Uint8 patchSize, const sf::Vector2u& mapSize,
+                   const sf::Vector2u tileSize, std::vector<TileFrame> tileFrame)
+    : m_texture	(texture),
+	m_patchSize	(patchSize),
+	m_mapSize	(mapSize),
+	m_tileSize	(tileSize),
+	m_patchCount(static_cast<sf::Uint32>(std::ceil(static_cast<float>(mapSize.x) / patchSize)), static_cast<sf::Uint32>(std::ceil(static_cast<float>(mapSize.y) / patchSize))),
+	m_visible	(true),
+    m_tileFrame (tileFrame)
+>>>>>>> e401ced178438fa1a4fef81e9882fbdaee84efa7
 
 {
     m_patches.resize(m_patchCount.x * m_patchCount.y);
@@ -136,6 +148,7 @@ void LayerSet::draw(sf::RenderTarget& rt, sf::RenderStates states) const
         {
             m_patches[q->m_patchIndex][p].position += q->m_movement;
             m_patches[q->m_patchIndex][p].color = q->m_colour;
+<<<<<<< HEAD
         }
         //mark AABB as dirty if patch size has changed - TODO this doesn't shrink AABB :/
         //if(!m_boundingBox.contains(m_patches[q->m_patchIndex][0].position)
@@ -183,6 +196,53 @@ void LayerSet::draw(sf::RenderTarget& rt, sf::RenderStates states) const
             }
         }
     }
+=======
+		}
+		//mark AABB as dirty if patch size has changed - TODO this doesn't shrink AABB :/
+		//if(!m_boundingBox.contains(m_patches[q->m_patchIndex][0].position)
+		//	|| !m_boundingBox.contains(m_patches[q->m_patchIndex][0].position))
+		//{
+		//	//we only need to check first and 3rd - not all 4
+		//	dirtyPatches.push_back(q->m_patchIndex);
+		//}
+	}
+	m_dirtyQuads.clear();
+
+	//for(auto p : dirtyPatches)
+	//{
+	//	//update AABB
+	//	sf::Vector2f min, max;
+	//	const auto& verts = m_patches[p];
+	//	for(auto i = 0; i < verts.size(); i += 2) //only check extents
+	//	{
+	//		if(verts[i].position.x < min.x) min.x = verts[i].position.x;
+	//		else if(verts[i].position.x > max.x) max.x = verts[i].position.x;
+	//		if(verts[i].position.y < min.y) min.y = verts[i].position.y;
+	//		else if(verts[i].position.y > max.y) max.y = verts[i].position.y;
+	//	}
+
+	//	//TODO this doesn't shrink the AABB!
+	//	if(m_boundingBox.left > min.x) m_boundingBox.left = min.x;
+	//	if(m_boundingBox.top > min.y) m_boundingBox.top = min.y;
+	//	if(std::abs(m_boundingBox.left) + m_boundingBox.width < max.x) m_boundingBox.width = std::fabs(m_boundingBox.left) + max.x;
+	//	if(std::abs(m_boundingBox.top) + m_boundingBox.height < max.y) m_boundingBox.width = std::fabs(m_boundingBox.top) + max.y;
+	//}
+
+	if(!m_visible) return;
+
+	for(auto x = m_visiblePatchStart.x; x <= m_visiblePatchEnd.x; ++x)
+	{
+		for(auto y = m_visiblePatchStart.y; y <= m_visiblePatchEnd.y; ++y)
+		{
+			auto index = y * m_patchCount.x + x;
+			if(index < m_patches.size() && !m_patches[index].empty())
+			{
+                states.texture = &m_texture;
+				rt.draw(m_patches[index].data(), static_cast<unsigned>(m_patches[index].size()), sf::Quads, states);
+			}
+		}
+	}
+>>>>>>> e401ced178438fa1a4fef81e9882fbdaee84efa7
 }
 
 void LayerSet::updateAABB(sf::Vector2f position, sf::Vector2f size)
