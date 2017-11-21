@@ -767,13 +767,20 @@ TileQuad* MapLoader::addTileToLayer(MapLayer& layer, sf::Uint16 x, sf::Uint16 y,
         std::vector<LayerSet::TileFrame> tileFrames;
 
         // Кладем если есть основной фрейм
-        tileFrames.push_back(LayerSet::TileFrame(LayerSet::TileFrameDescription(tileInfo.m_tileId, 0), *m_tilesetTextures[id]));
-        for (auto t : tileInfo.m_tileFrames) {
+//        tileFrames.push_back(LayerSet::TileFrame(LayerSet::TileFrameDescription(id, 0), *m_tilesetTextures[id]));
+        LayerSet::TileFrame frame = LayerSet::TileFrame(LayerSet::TileFrameDescription(id, 0), *m_tilesetTextures[id]);
+        for (auto &t : tileInfo.m_tileFrames) {
             // Кладем анимационные фреймы
-            tileFrames.push_back(LayerSet::TileFrame(t, *m_tilesetTextures[id]));
-        }
 
-        layer.layerSets.insert(std::make_pair(id, std::make_shared<LayerSet>(m_patchSize, sf::Vector2u(m_width, m_height), sf::Vector2u(m_tileWidth, m_tileHeight), tileFrames, tileInfo)));
+            // по ID найдем нужный фрейм
+            for (auto &p : m_tileInfo) {
+                if (p.m_tileId == t.getTileId()) {
+                    tileFrames.push_back(LayerSet::TileFrame(t, *m_tilesetTextures[p.TileSetId]));
+                    break;
+                }
+            }
+        }
+        layer.layerSets.insert(std::make_pair(id, std::make_shared<LayerSet>(m_patchSize, sf::Vector2u(m_width, m_height), sf::Vector2u(m_tileWidth, m_tileHeight), frame, tileFrames, tileInfo)));
 	}
 
 	//add tile to set

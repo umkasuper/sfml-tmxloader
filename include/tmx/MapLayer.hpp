@@ -29,6 +29,7 @@ it freely, subject to the following restrictions:
 #ifndef MAPLAYER_HPP_
 #define MAPLAYER_HPP_
 
+#include <SFML/System/Clock.hpp>
 #include <tmx/MapObject.hpp>
 #include <tmx/Export.hpp>
 
@@ -69,6 +70,8 @@ namespace tmx
             const sf::Uint16 m_Duration; // Длительность показа
             const sf::Uint16 m_tileId;   // ID tile который показывать
         public:
+            sf::Uint16 getTileId() const {return m_tileId;}
+            sf::Uint16 getDuration() const { return m_Duration;}
             TileFrameDescription(const sf::Uint16 duration, const sf::Uint16 tileID) :
                     m_Duration(duration),
                     m_tileId(tileID) {}
@@ -80,6 +83,7 @@ namespace tmx
         public:
             const sf::Texture& m_texture;
             const sf::Texture &getTexture() {return m_texture;}
+            const TileFrameDescription &getFrameDescription() const {return m_frameDescription;}
             TileFrame(const TileFrameDescription &frameDescription, const sf::Texture& texture) :
                 m_frameDescription(frameDescription),
                 m_texture(texture) {}
@@ -103,18 +107,25 @@ namespace tmx
             TileInfo(const sf::IntRect& rect, const sf::Vector2f& size, sf::Uint16 tilesetId, sf::Uint16 teleId, const std::vector<TileFrameDescription> &tileFrames);
         };
 
-		LayerSet(sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize, std::vector<TileFrame> &tileFrame, LayerSet::TileInfo &tileInfo);
+		LayerSet(sf::Uint8 patchSize, const sf::Vector2u& mapSize, const sf::Vector2u tileSize, TileFrame &frame, std::vector<TileFrame> &tileFrame, LayerSet::TileInfo &tileInfo);
 		TileQuad* addTile(sf::Vertex vt0, sf::Vertex vt1, sf::Vertex vt2, sf::Vertex vt3, sf::Uint16 x, sf::Uint16 y);
 		void cull(const sf::FloatRect& bounds);
 
+        /*!
+         * Обновление времени
+         */
+        void updateTime();
 
 	private:
+        const TileFrame m_frame; // главный кадр
         const std::vector<TileFrame> m_tileFrame; // массив кадров
 		const TileInfo& m_tileInfo; // ссылка на TileInfo
         const sf::Uint8 m_patchSize;
 		const sf::Vector2u m_mapSize;
 		const sf::Vector2u m_patchCount;
 		const sf::Vector2u m_tileSize;
+
+        sf::Clock m_clock;
 
 		std::vector<TileQuad::Ptr> m_quads;
 		mutable std::vector<TileQuad*> m_dirtyQuads;
@@ -177,6 +188,14 @@ namespace tmx
         \brief Used to cull patches outside the visible area
         */
 		void cull(const sf::FloatRect& bounds);
+
+		const MapObjects &getMapObjects() const {return objects;}
+        MapObjects &getMapObjects() {return objects;}
+
+        /*!
+         * обновление времени
+         */
+        void updateTime();
 
 	private:
 		const sf::Shader* m_shader;

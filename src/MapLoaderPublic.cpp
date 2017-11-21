@@ -120,6 +120,13 @@ std::vector<MapObject*> MapLoader::queryQuadTree(const sf::FloatRect& testArea)
 	return m_rootNode.retrieve(testArea);
 }
 
+// обновление времени, для анимации
+void MapLoader::updateTime()
+{
+    for(auto& l : m_layers)
+        l.updateTime();
+}
+
 std::vector<MapLayer>& MapLoader::getLayers()
 {
 	return m_layers;

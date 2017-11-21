@@ -78,6 +78,12 @@ namespace tmx
         for example the screen size
         */
         void updateQuadTree(const sf::FloatRect& rootArea);
+
+        /*!
+         * обновление течения времени на карте, для анимиции
+         */
+        void updateTime();
+
         /*!
         \brief Queries the quad tree and returns a vector of objects contained by nodes enclosing
         or intersecting testArea

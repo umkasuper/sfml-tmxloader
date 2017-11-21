@@ -72,19 +72,20 @@ void TileQuad::setDirty()
 
 //public
 LayerSet::LayerSet(sf::Uint8 patchSize, const sf::Vector2u& mapSize,
-                   const sf::Vector2u tileSize, std::vector<LayerSet::TileFrame> &tileFrame, LayerSet::TileInfo &tileInfo)
+                   const sf::Vector2u tileSize, LayerSet::TileFrame &frame, std::vector<LayerSet::TileFrame> &tileFrame, LayerSet::TileInfo &tileInfo)
     : /*m_texture	(texture),*/
     m_patchSize	(patchSize),
     m_mapSize	(mapSize),
     m_tileSize	(tileSize),
     m_patchCount(static_cast<sf::Uint32>(std::ceil(static_cast<float>(mapSize.x) / patchSize)), static_cast<sf::Uint32>(std::ceil(static_cast<float>(mapSize.y) / patchSize))),
     m_visible	(true),
+    m_frame(frame),
     m_tileFrame (tileFrame),
     m_tileInfo  (tileInfo),
     m_frameNumber(0)
-
 {
     m_patches.resize(m_patchCount.x * m_patchCount.y);
+    m_clock.restart();
 }
 
 TileQuad* LayerSet::addTile(sf::Vertex vt0, sf::Vertex vt1, sf::Vertex vt2, sf::Vertex vt3, sf::Uint16 x, sf::Uint16 y)
@@ -124,6 +125,17 @@ void LayerSet::cull(const sf::FloatRect& bounds)
     if(m_visiblePatchEnd.y > static_cast<int>(m_patchCount.y)) m_visiblePatchEnd.y = m_patchCount.y;
 
     m_visiblePatchEnd += m_visiblePatchStart;
+}
+
+void LayerSet::updateTime()
+{
+    int m_tileFrameSize = m_tileFrame.size();
+    if (m_tileFrameSize > 0) {
+        if (m_tileFrame[m_frameNumber].getFrameDescription().getDuration() < m_clock.getElapsedTime().asMilliseconds()) {
+            m_frameNumber = ((m_frameNumber + 1) % m_tileFrameSize); // на следующий кадр
+            m_clock.restart();
+        }
+    }
 }
 
 //private
@@ -176,10 +188,11 @@ void LayerSet::draw(sf::RenderTarget& rt, sf::RenderStates states) const
             auto index = y * m_patchCount.x + x;
             if(index < m_patches.size() && !m_patches[index].empty())
             {
-                //states.texture = &m_texture;
-                states.texture = &(m_tileFrame[m_frameNumber].m_texture);
+                states.texture = m_tileFrame.size() == 0 ? &(m_frame.m_texture) : &(m_tileFrame[m_frameNumber].m_texture);
+                //sf::Transform transform;
+                //transform.scale(0.5, 0.5);
+                //states.transform = transform;
                 rt.draw(m_patches[index].data(), static_cast<unsigned>(m_patches[index].size()), sf::Quads, states);
-//                m_frameNumber = ((m_frameNumber + 1) % m_tileFrame.size()) - 1; // на следующий кадр
             }
         }
     }
@@ -226,6 +239,12 @@ void MapLayer::cull(const sf::FloatRect& bounds)
 {
     for(auto& ls : layerSets)
         ls.second->cull(bounds);
+}
+
+void MapLayer::updateTime()
+{
+    for(auto& ls : layerSets)
+        ls.second->updateTime();
 }
 
 //private
